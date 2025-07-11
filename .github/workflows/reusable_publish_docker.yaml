@@ -11,23 +11,17 @@ on:
         required: false
         type: boolean
         default: false
-      sign:
-        description: Add signature with cosign
-        required: false
-        type: boolean
-        default: false
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   publish-docker:
     runs-on: ubuntu-latest
 
     permissions:
-      attestations: write
-      id-token: write
-      contents: read
+      attestations: write # attestations are used to sign the images
+      contents: write # create release
+      packages: write # push images to GHCR
 
     steps:
       - name: Set up Docker Buildx

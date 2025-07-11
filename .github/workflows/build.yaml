@@ -1,18 +1,22 @@
-name: Dev Packages and Docker images
+name: Build
 on:
   push:
     branches: [master]
+    tags:
+      - '*.*.*'
+  pull_request:
 
-# Checks if any concurrent jobs is running for master CI and eventually cancel it
 concurrency:
-  group: ci-master
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   fetch-version:
     uses: ./.github/workflows/reusable_fetch_version.yaml 
 
-  build-dev-docker:
+  build-docker:
     needs: fetch-version
     uses: ./.github/workflows/reusable_build_docker.yaml
     with:
@@ -21,11 +25,21 @@ jobs:
       tag: master
     secrets: inherit
 
-  build-dev-docker-arm64:
+  build-docker-arm64:
     needs: fetch-version
     uses: ./.github/workflows/reusable_build_docker.yaml
     with:
       arch: aarch64
       version: ${{ needs.fetch-version.outputs.version }}
       tag: master
+    secrets: inherit
+
+  publish-docker:
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    needs: [build-docker, build-docker-arm64]
+    uses: ./.github/workflows/reusable_publish_docker.yaml
+    with:
+      # We don't do backports.
+      is_latest: true
+      tag: ${{ github.event.ref }}
     secrets: inherit

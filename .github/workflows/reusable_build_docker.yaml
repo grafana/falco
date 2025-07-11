@@ -15,11 +15,6 @@ on:
         required: true
         type: string
 
-# Here we just build all docker images as tarballs,
-# then we upload all the tarballs to be later downloaded by reusable_publish_docker workflow.
-# In this way, we don't need to publish any arch specific image,
-# and this "build" workflow is actually only building images.
-
 permissions:
   contents: read
 
