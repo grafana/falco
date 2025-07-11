@@ -1,3 +1,5 @@
-*
-!config/
-!docker/
+/build/
+/skeleton-build/
+# If there is a docker change, the caches will be invalidated anyways.
+# We have no need to cache the actual source-code.
+/docker/

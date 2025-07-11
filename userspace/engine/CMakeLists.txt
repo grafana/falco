@@ -32,13 +32,9 @@ add_library(
 	rule_loader_compiler.cpp
 )
 
-if(EMSCRIPTEN)
-	target_compile_options(falco_engine PRIVATE "-sDISABLE_EXCEPTION_CATCHING=0")
-endif()
-
 set(ENGINE_LIBRARIES sinsp nlohmann_json::nlohmann_json yaml-cpp)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT MINIMAL_BUILD)
+if(NOT MINIMAL_BUILD)
 	# Used by falco_utils.cpp
 	add_dependencies(falco_engine openssl)
 	list(APPEND ENGINE_LIBRARIES "${OPENSSL_LIBRARIES}")

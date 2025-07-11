@@ -75,11 +75,9 @@ if(USE_JEMALLOC)
 	list(APPEND FALCO_LIBRARIES ${JEMALLOC_LIB})
 endif()
 
-if(NOT WIN32)
-	target_sources(falco_application PRIVATE outputs_program.cpp outputs_syslog.cpp)
-endif()
+target_sources(falco_application PRIVATE outputs_program.cpp outputs_syslog.cpp)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT MINIMAL_BUILD)
+if(NOT MINIMAL_BUILD)
 	target_sources(
 		falco_application
 		PRIVATE outputs_grpc.cpp
@@ -108,11 +106,11 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT MINIMAL_BUILD)
 		"${CARES_INCLUDE}"
 	)
 
-	if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND USE_BUNDLED_GRPC)
+	if(USE_BUNDLED_GRPC)
 		list(APPEND FALCO_DEPENDENCIES grpc)
 	endif()
 
-	if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND USE_BUNDLED_CURL)
+	if(USE_BUNDLED_CURL)
 		list(APPEND FALCO_DEPENDENCIES curl)
 	endif()
 
@@ -130,10 +128,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT MINIMAL_BUILD)
 	)
 endif()
 
-if(EMSCRIPTEN)
-	target_compile_options(falco_application PRIVATE "-sDISABLE_EXCEPTION_CATCHING=0")
-endif()
-
 target_compile_definitions(falco_application PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
 
 add_dependencies(falco_application ${FALCO_DEPENDENCIES})
@@ -147,17 +141,7 @@ add_dependencies(falco falco_application ${FALCO_DEPENDENCIES})
 target_link_libraries(falco falco_application ${FALCO_LIBRARIES})
 target_include_directories(falco PUBLIC ${FALCO_INCLUDE_DIRECTORIES})
 
-if(EMSCRIPTEN)
-	target_compile_options(falco PRIVATE "-sDISABLE_EXCEPTION_CATCHING=0")
-	target_link_options(falco PRIVATE "-sALLOW_MEMORY_GROWTH=1")
-	target_link_options(falco PRIVATE "-sDISABLE_EXCEPTION_CATCHING=0")
-	target_link_options(falco PRIVATE "-sMODULARIZE=1")
-	target_link_options(falco PRIVATE "-sEXPORT_ES6=1")
-	target_link_options(falco PRIVATE "-sEXPORTED_RUNTIME_METHODS=['FS', 'callMain']")
-	target_link_options(falco PRIVATE "-sEXPORTED_FUNCTIONS=['_main','_htons','_ntohs']")
-endif()
-
-if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT MINIMAL_BUILD)
+if(NOT MINIMAL_BUILD)
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.grpc.pb.cc
 			   ${CMAKE_CURRENT_BINARY_DIR}/version.grpc.pb.h
@@ -198,8 +182,7 @@ if(MUSL_OPTIMIZED_BUILD AND CMAKE_BUILD_TYPE STREQUAL "release")
 	)
 endif()
 
-# TODO: Add win32 support. https://github.com/falcosecurity/falco/issues/3445
-if(CMAKE_BUILD_TYPE STREQUAL "relwithdebinfo" AND NOT WIN32)
+if(CMAKE_BUILD_TYPE STREQUAL "relwithdebinfo")
 	find_program(OBJCOPY_EXECUTABLE NAMES objcopy)
 	if(OBJCOPY_EXECUTABLE)
 		add_custom_command(
@@ -217,18 +200,4 @@ if(CMAKE_BUILD_TYPE STREQUAL "relwithdebinfo" AND NOT WIN32)
 	endif()
 endif()
 
-if(EMSCRIPTEN)
-	install(
-		FILES "$<TARGET_FILE_DIR:falco>/falco.js" "$<TARGET_FILE_DIR:falco>/falco.wasm"
-		DESTINATION ${FALCO_BIN_DIR}
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-elseif(WIN32)
-	install(
-		TARGETS falco
-		DESTINATION bin
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-else()
-	install(TARGETS falco RUNTIME DESTINATION ${FALCO_BIN_DIR} COMPONENT "${FALCO_COMPONENT_NAME}")
-endif()
+install(TARGETS falco RUNTIME DESTINATION ${FALCO_BIN_DIR} COMPONENT "${FALCO_COMPONENT_NAME}")
