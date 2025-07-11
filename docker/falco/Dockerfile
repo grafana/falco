@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.source='https://github.com/grafana/falco/tree/mas
       org.opencontainers.image.licenses='Apache-2.0'
 
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends libasan5 libusan1 ca-certificates
+RUN apt-get install -y --no-install-recommends libasan6 libusan1 ca-certificates
 RUN apt clean -y && \
     rm -rf /var/lib/apt/lists/*
 
