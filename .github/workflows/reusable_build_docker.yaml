@@ -57,20 +57,6 @@ jobs:
             .
             docker save docker.io/falcosecurity/falco:"${ARCH}-${TAG}" --output /tmp/falco-"${ARCH}".tar
 
-      - name: Build falco-debian image
-        env:
-          ARCH: ${{ inputs.arch }}
-          TAG: ${{ inputs.tag }}
-          BUCKET_SUFFIX: ${{ inputs.bucket_suffix }}
-          FALCO_VERSION: ${{ inputs.version }}
-        run: |
-          docker build -f docker/falco-debian/Dockerfile -t docker.io/falcosecurity/falco:"${ARCH}-${TAG}"-debian \
-            --build-arg VERSION_BUCKET=deb"${BUCKET_SUFFIX}" \
-            --build-arg FALCO_VERSION="${FALCO_VERSION}" \
-            --build-arg TARGETARCH="${TARGETARCH}" \
-            .
-            docker save docker.io/falcosecurity/falco:"${ARCH}-${TAG}"-debian --output /tmp/falco-"${ARCH}"-debian.tar
-
       - name: Build falco-driver-loader image
         env:
           ARCH: ${{ inputs.arch }}
@@ -81,20 +67,6 @@ jobs:
             --build-arg TARGETARCH=${TARGETARCH} \
             .
             docker save docker.io/falcosecurity/falco-driver-loader:"${ARCH}-${TAG}" --output /tmp/falco-driver-loader-"${ARCH}".tar
-
-      - name: Build falco-driver-loader-buster image
-        env:
-          ARCH: ${{ inputs.arch }}
-          TAG: ${{ inputs.tag }}
-          BUCKET_SUFFIX: ${{ inputs.bucket_suffix }}
-          FALCO_VERSION: ${{ inputs.version }}
-        run: |
-          docker build -f docker/driver-loader-buster/Dockerfile -t docker.io/falcosecurity/falco-driver-loader:"${ARCH}-${TAG}"-buster \
-            --build-arg VERSION_BUCKET=deb"${BUCKET_SUFFIX}" \
-            --build-arg FALCO_VERSION="${FALCO_VERSION}" \
-            --build-arg TARGETARCH=${TARGETARCH} \
-            .
-            docker save docker.io/falcosecurity/falco-driver-loader:"${ARCH}-${TAG}"-buster --output /tmp/falco-driver-loader-"${ARCH}-buster.tar
 
       - name: Upload images tarballs
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0

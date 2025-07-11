@@ -31,51 +31,16 @@ option(USE_UBSAN "Build with UndefinedBehaviorSanitizer" OFF)
 option(UBSAN_HALT_ON_ERROR "Halt on error when building with UBSan" ON)
 option(USE_JEMALLOC "Use jemalloc allocator" OFF)
 
-if(WIN32)
-	if(POLICY CMP0091)
-		# Needed for CMAKE_MSVC_RUNTIME_LIBRARY
-		# https://cmake.org/cmake/help/latest/policy/CMP0091.html
-		cmake_policy(SET CMP0091 NEW)
-	endif()
-	set(CPACK_GENERATOR "NSIS") # this needs NSIS installed, and available
-elseif(APPLE)
-	set(CPACK_GENERATOR "DragNDrop")
-elseif(EMSCRIPTEN)
-	set(USE_BUNDLED_DEPS
-		ON
-		CACHE BOOL "" FORCE
-	)
-	set(BUILD_DRIVER
-		OFF
-		CACHE BOOL "" FORCE
-	)
-	set(ENABLE_DKMS
-		OFF
-		CACHE BOOL "" FORCE
-	)
-	set(BUILD_BPF
-		OFF
-		CACHE BOOL "" FORCE
-	)
-	set(CPACK_GENERATOR
-		TGZ
-		CACHE BOOL "" FORCE
-	)
-endif()
-
 # gVisor is currently only supported on Linux x86_64
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64"
-   AND CMAKE_SYSTEM_NAME MATCHES "Linux"
-   AND NOT MINIMAL_BUILD
-)
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT MINIMAL_BUILD)
 	option(BUILD_FALCO_GVISOR "Build gVisor support for Falco" ON)
 	if(BUILD_FALCO_GVISOR)
 		add_definitions(-DHAS_GVISOR)
 	endif()
 endif()
 
-# Modern BPF is not supported on not Linux systems and in MINIMAL_BUILD
-if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT MINIMAL_BUILD)
+# Modern BPF is not supported on MINIMAL_BUILD
+if(NOT MINIMAL_BUILD)
 	option(BUILD_FALCO_MODERN_BPF "Build modern BPF support for Falco" ON)
 	if(BUILD_FALCO_MODERN_BPF)
 		add_definitions(-DHAS_MODERN_BPF)
@@ -109,11 +74,7 @@ if(NOT DEFINED FALCO_ETC_DIR)
 endif()
 
 # This will be used to print the architecture for which Falco is compiled.
-if(EMSCRIPTEN)
-	set(FALCO_TARGET_ARCH "wasm")
-else()
-	set(FALCO_TARGET_ARCH ${CMAKE_SYSTEM_PROCESSOR})
-endif()
+set(FALCO_TARGET_ARCH ${CMAKE_SYSTEM_PROCESSOR})
 
 include(CompilerFlags)
 
@@ -161,11 +122,7 @@ include(njson)
 # yaml-cpp
 include(yaml-cpp)
 
-if(NOT WIN32
-   AND NOT APPLE
-   AND NOT MINIMAL_BUILD
-   AND NOT EMSCRIPTEN
-)
+if(NOT MINIMAL_BUILD)
 	# OpenSSL
 	include(openssl)
 
@@ -179,64 +136,29 @@ endif()
 include(cxxopts)
 
 # One TBB
-if(NOT EMSCRIPTEN)
-	include(tbb)
-endif()
+include(tbb)
 
 include(zlib)
 include(valijson)
 if(NOT MINIMAL_BUILD)
-	if(NOT WIN32
-	   AND NOT APPLE
-	   AND NOT EMSCRIPTEN
-	)
-		include(cares)
-		include(protobuf)
-		# gRPC
-		include(grpc)
-	endif()
+	include(cares)
+	include(protobuf)
+	# gRPC
+	include(grpc)
 endif()
 
 # Installation
-if(WIN32)
-	set(FALCO_INSTALL_CONF_FILE
-		"%PROGRAMFILES%/${PACKAGE_NAME}-${FALCO_VERSION}/etc/falco/falco.yaml"
-	)
-	install(
-		FILES falco.yaml
-		DESTINATION etc/falco/
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-	install(
-		DIRECTORY
-		DESTINATION etc/falco/config.d
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-elseif(APPLE)
-	set(FALCO_INSTALL_CONF_FILE "/etc/falco/falco.yaml")
-	install(
-		FILES falco.yaml
-		DESTINATION etc/falco/
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-	install(
-		DIRECTORY
-		DESTINATION etc/falco/config.d
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-else()
-	set(FALCO_INSTALL_CONF_FILE "/etc/falco/falco.yaml")
-	install(
-		FILES falco.yaml
-		DESTINATION "${FALCO_ETC_DIR}"
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-	install(
-		DIRECTORY
-		DESTINATION "${FALCO_ETC_DIR}/config.d"
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-endif()
+set(FALCO_INSTALL_CONF_FILE "/etc/falco/falco.yaml")
+install(
+	FILES falco.yaml
+	DESTINATION "${FALCO_ETC_DIR}"
+	COMPONENT "${FALCO_COMPONENT_NAME}"
+)
+install(
+	DIRECTORY
+	DESTINATION "${FALCO_ETC_DIR}/config.d"
+	COMPONENT "${FALCO_COMPONENT_NAME}"
+)
 
 if(NOT MINIMAL_BUILD)
 	# Coverage
@@ -261,11 +183,7 @@ add_subdirectory(scripts)
 add_subdirectory(userspace/engine)
 add_subdirectory(userspace/falco)
 
-if(NOT WIN32
-   AND NOT APPLE
-   AND NOT EMSCRIPTEN
-   AND NOT MUSL_OPTIMIZED_BUILD
-)
+if(NOT MUSL_OPTIMIZED_BUILD)
 	include(falcoctl)
 	include(container_plugin)
 
