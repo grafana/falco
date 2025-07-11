@@ -13,7 +13,7 @@ FROM builder_base AS builder
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
         ca-certificates curl jq git make cmake clang build-essential \
-        libelf-dev llvm pkg-config autoconf libcurl4-openssl-dev libasan5 libubsan1 \
+        libelf-dev llvm pkg-config autoconf libcurl4-openssl-dev libasan6 libubsan1 \
         automake libtool m4 bpftool linux-headers-$(uname -m | sed 's/x86_/amd/' | sed 's/aarch/arm/') \
         libbpf1 libbpf-dev libyaml-cpp-dev nlohmann-json3-dev openssl libssl-dev
 
