@@ -13,7 +13,7 @@ FROM builder_base AS builder
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
         ca-certificates curl jq git make cmake clang build-essential \
-        libelf-dev llvm pkg-config autoconf libcurl4-openssl-dev libasan6 libubsan1 \
+        libelf-dev llvm pkg-config autoconf libcurl4-openssl-dev \
         automake libtool m4 bpftool linux-headers-$(uname -m | sed 's/x86_/amd/' | sed 's/aarch/arm/') \
         libbpf1 libbpf-dev libyaml-cpp-dev nlohmann-json3-dev openssl libssl-dev
 
@@ -35,7 +35,6 @@ RUN cmake -B skeleton-build -S . \
 RUN cmake --build skeleton-build --target ProbeSkeleton -j$(nproc)
 
 ARG BUILD_TYPE="RelWithDebInfo"
-ARG USE_ASAN="OFF"
 ARG USE_JEMALLOC="OFF"
 RUN cmake -B build -S . \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -47,7 +46,6 @@ RUN cmake -B build -S . \
     -DBUILD_BPF=OFF \
     -DUSE_JEMALLOC=${USE_JEMALLOC} \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
-    -DUSE_ASAN=${USE_ASAN} \
     -DCREATE_TEST_TARGETS=ON \
     -DBUILD_FALCO_UNIT_TESTS=ON
 
