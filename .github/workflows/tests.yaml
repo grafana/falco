@@ -1,0 +1,20 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  build-docker:
+    uses: ./.github/workflows/reusable_build_docker.yaml
+    with:
+      arch: x86_64
+      tag: ${{ github.event.pull_request.head.ref }}
+      version: 0.0.0
+    secrets: inherit

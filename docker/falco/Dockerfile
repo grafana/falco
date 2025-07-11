@@ -1,41 +1,72 @@
-FROM cgr.dev/chainguard/wolfi-base
+FROM debian:12-slim AS builder_base
 
-LABEL org.opencontainers.image.authors='The Falco Authors https://falco.org' \
-      org.opencontainers.image.url='https://falco.org' \
-      org.opencontainers.image.source='https://github.com/falcosecurity/falco' \
-      org.opencontainers.image.vendor='Falco Organization' \
-      org.opencontainers.image.licenses='Apache-2.0' \
-      maintainer="cncf-falco-dev@lists.cncf.io"
+LABEL org.opencontainers.image.source='https://github.com/grafana/falco/tree/master/docker/falco/Dockerfile' \
+      org.opencontainers.image.licenses='Apache-2.0'
 
-LABEL usage="docker run -i -t --privileged -v /var/run/docker.sock:/host/var/run/docker.sock -v /proc:/host/proc:ro  -v /etc:/host/etc:ro falcosecurity/falco:latest"
-# NOTE: for the "least privileged" use case, please refer to the official documentation
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends libasan5 libusan1 ca-certificates
+RUN apt clean -y && \
+    rm -rf /var/lib/apt/lists/*
 
-ARG FALCO_VERSION
-ARG VERSION_BUCKET=bin
+FROM builder_base AS builder
 
-ENV FALCO_VERSION=${FALCO_VERSION}
-ENV VERSION_BUCKET=${VERSION_BUCKET}
-ENV HOST_ROOT /host
-ENV HOME /root
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+        ca-certificates curl jq git make cmake clang build-essential \
+        libelf-dev llvm pkg-config autoconf libcurl4-openssl-dev libasan5 libubsan1 \
+        automake libtool m4 bpftool linux-headers-$(uname -m | sed 's/x86_/amd/' | sed 's/aarch/arm/') \
+        libbpf1 libbpf-dev libyaml-cpp-dev nlohmann-json3-dev openssl libssl-dev
 
-RUN apk update && apk add curl ca-certificates jq libstdc++
+ARG USER=1000
+ARG GROUP=1000
 
-WORKDIR /
+USER ${USER}:${GROUP}
 
-RUN FALCO_VERSION_URLENCODED=$(echo -n ${FALCO_VERSION}|jq -sRr @uri) && \
-    curl -L -o falco.tar.gz \
-    https://download.falco.org/packages/${VERSION_BUCKET}/$(uname -m)/falco-${FALCO_VERSION_URLENCODED}-$(uname -m).tar.gz && \
-    tar -xvf falco.tar.gz && \
+COPY --chown=${USER}:${GROUP} . /src
+WORKDIR /src
+
+ARG FALCO_VERSION=0.0.0
+
+RUN mkdir -p build
+RUN cmake -B skeleton-build -S . \
+    -DUSE_BUNDLED_DEPS=ON \
+    -DCREATE_TEST_TARGETS=OFF \
+    -DFALCO_VERSION=${FALCO_VERSION}
+RUN cmake --build skeleton-build --target ProbeSkeleton -j$(nproc)
+
+ARG BUILD_TYPE="RelWithDebInfo"
+ARG USE_ASAN="OFF"
+ARG USE_JEMALLOC="OFF"
+RUN cmake -B build -S . \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DUSE_BUNDLED_DEPS=ON \
+    -DFALCO_ETC_DIR=/etc/falco \
+    -DFALCO_VERSION=${FALCO_VERSION} \
+    -DMODERN_BPF_SKEL_DIR=./skeleton-build/skel_dir/ \
+    -DBUILD_DRIVER=OFF \
+    -DBUILD_BPF=OFF \
+    -DUSE_JEMALLOC=${USE_JEMALLOC} \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DUSE_ASAN=${USE_ASAN} \
+    -DCREATE_TEST_TARGETS=ON \
+    -DBUILD_FALCO_UNIT_TESTS=ON
+
+RUN cmake --build build --target falco -j$(nproc)
+RUN cmake --build build --target package -j$(nproc)
+RUN cmake --build build --target falco_unit_tests -j$(nproc)
+RUN mv build/falco-${FALCO_VERSION}-$(uname -m).tar.gz falco.tar.gz
+
+USER root
+RUN /src/build/unit_tests/falco_unit_tests
+
+FROM builder_base
+
+COPY --from=builder /src/falco.tar.gz /falco.tar.gz
+RUN tar -xzf falco.tar.gz && \
+    mv falco-*/ falco/ && \
     rm -f falco.tar.gz && \
-    mv falco-${FALCO_VERSION}-$(uname -m) falco && \
-    rm -rf /falco/usr/src/falco-* && \
-    cp -r /falco/* / && \
-    rm -rf /falco
+    rm -rf falco/usr/src/falco-* && \
+    cp -r falco/* / && \
+    rm -rf falco
 
-# Change the falco config within the container to enable ISO 8601 output.
-ADD ./config/falco.iso8601_timeformat.yaml /etc/falco/config.d/
-
-# Falcoctl is not included here.
-RUN rm -rf /usr/bin/falcoctl /etc/falcoctl/
-
-CMD ["/usr/bin/falco"]
+ENTRYPOINT ["/usr/bin/falco"]

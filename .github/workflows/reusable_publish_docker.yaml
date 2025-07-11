@@ -49,51 +49,33 @@ jobs:
         run: |
           for img in /tmp/falco-images/falco-*.tar; do docker load --input $img; done
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_SECRET }}
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a # v4.0.1
-        with:
-          role-to-assume: "arn:aws:iam::292999226676:role/github_actions-falco-ecr"
-          aws-region: us-east-1 # The region must be set to us-east-1 in order to access ECR Public.
-
-      - name: Login to Amazon ECR
-        id: login-ecr-public
-        uses: aws-actions/amazon-ecr-login@2f9f10ea3fa2eed41ac443fee8bfbd059af2d0a4 # v1.6.0
-        with:
-          registry-type: public
-
       - name: Setup Crane
         uses: imjasonh/setup-crane@00c9e93efa4e1138c9a7a5c594acd6c75a2fbf0c # v0.3
         with:
           version: v0.15.1
 
-      # We're pushing the arch-specific manifests to Docker Hub so that we'll be able to easily create the index/multiarch later
-      - name: Push arch-specific images to Docker Hub
+      # We're pushing the arch-specific manifests to GHCR so that we'll be able to easily create the index/multiarch later
+      - name: Push arch-specific images to GHCR
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          docker push "docker.io/falcosecurity/falco:aarch64-${TAG}"
-          docker push "docker.io/falcosecurity/falco:x86_64-${TAG}"
-          docker push "docker.io/falcosecurity/falco-driver-loader:aarch64-${TAG}"
-          docker push "docker.io/falcosecurity/falco-driver-loader:x86_64-${TAG}"
+          docker push "ghcr.io/grafana/falco:aarch64-${TAG}"
+          docker push "ghcr.io/grafana/falco:x86_64-${TAG}"
+          docker push "ghcr.io/grafana/falco-driver-loader:aarch64-${TAG}"
+          docker push "ghcr.io/grafana/falco-driver-loader:x86_64-${TAG}"
 
-      - name: Create Falco manifest on Docker Hub
+      - name: Create Falco manifest on GHCR
         uses: Noelware/docker-manifest-action@8e337e3cb9656abfcf20146b99706fd88716e942 # v0.4.0
         with:
-          inputs: docker.io/falcosecurity/falco:${{ inputs.tag }}
-          images: docker.io/falcosecurity/falco:aarch64-${{ inputs.tag }},docker.io/falcosecurity/falco:x86_64-${{ inputs.tag }}
+          inputs: ghcr.io/grafana/falco:${{ inputs.tag }}
+          images: ghcr.io/grafana/falco:aarch64-${{ inputs.tag }},ghcr.io/grafana/falco:x86_64-${{ inputs.tag }}
           push: true
 
-      - name: Create falco-driver-loader manifest on Docker Hub
+      - name: Create falco-driver-loader manifest on GHCR
         uses: Noelware/docker-manifest-action@8e337e3cb9656abfcf20146b99706fd88716e942 # v0.4.0
         with:
-          inputs: docker.io/falcosecurity/falco-driver-loader:${{ inputs.tag }}
-          images: docker.io/falcosecurity/falco-driver-loader:aarch64-${{ inputs.tag }},docker.io/falcosecurity/falco-driver-loader:x86_64-${{ inputs.tag }}
+          inputs: ghcr.io/grafana/falco-driver-loader:${{ inputs.tag }}
+          images: ghcr.io/grafana/falco-driver-loader:aarch64-${{ inputs.tag }},docker.io/grafana/falco-driver-loader:x86_64-${{ inputs.tag }}
           push: true
 
       - name: Get Digests for images
@@ -102,51 +84,25 @@ jobs:
           TAG: ${{ inputs.tag }}
         # We could probably use the docker-manifest-action output instead of recomputing those with crane
         run: |
-          echo "falco=$(crane digest docker.io/falcosecurity/falco:${TAG})" >> $GITHUB_OUTPUT
-          echo "falco-driver-loader=$(crane digest docker.io/falcosecurity/falco-driver-loader:${TAG})" >> $GITHUB_OUTPUT
+          echo "falco=$(crane digest ghcr.io/grafana/falco:${TAG})" >> $GITHUB_OUTPUT
+          echo "falco-driver-loader=$(crane digest ghcr.io/grafana/falco-driver-loader:${TAG})" >> $GITHUB_OUTPUT
 
-      - name: Publish images to ECR
-        env:
-          TAG: ${{ inputs.tag }}
-        run: |
-          crane copy "docker.io/falcosecurity/falco:${TAG}" "public.ecr.aws/falcosecurity/falco:${TAG}"
-          crane copy "docker.io/falcosecurity/falco-driver-loader:${TAG}" "public.ecr.aws/falcosecurity/falco-driver-loader:${TAG}"
-
-      - name: Tag latest on Docker Hub and ECR
+      - name: Tag latest on GHCR
         if: inputs.is_latest
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          crane tag "docker.io/falcosecurity/falco:${TAG}" latest
-          crane tag "docker.io/falcosecurity/falco-driver-loader:${TAG}" latest
-
-          crane tag "public.ecr.aws/falcosecurity/falco:${TAG}" latest
-          crane tag "public.ecr.aws/falcosecurity/falco-driver-loader:${TAG}" latest
-
-      - name: Setup Cosign
-        if: inputs.sign
-        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
-
-      - name: Sign images with cosign
-        if: inputs.sign
-        env:
-          COSIGN_EXPERIMENTAL: "true"
-          COSIGN_YES: "true"
-        run: |
-          cosign sign docker.io/falcosecurity/falco:latest@${{ steps.digests.outputs.falco }}
-          cosign sign docker.io/falcosecurity/falco-driver-loader:latest@${{ steps.digests.outputs.falco-driver-loader }}
-
-          cosign sign public.ecr.aws/falcosecurity/falco:latest@${{ steps.digests.outputs.falco }}
-          cosign sign public.ecr.aws/falcosecurity/falco-driver-loader:latest@${{ steps.digests.outputs.falco-driver-loader }}
+          crane tag "ghcr.io/grafana/falco:${TAG}" latest
+          crane tag "ghcr.io/grafana/falco-driver-loader:${TAG}" latest
 
       - uses: actions/attest-build-provenance@173725a1209d09b31f9d30a3890cf2757ebbff0d # v1.1.2
         with:
-          subject-name: docker.io/falcosecurity/falco
+          subject-name: ghcr.io/grafana/falco
           subject-digest: ${{ steps.digests.outputs.falco }}
           push-to-registry: true
 
       - uses: actions/attest-build-provenance@173725a1209d09b31f9d30a3890cf2757ebbff0d # v1.1.2
         with:
-          subject-name: docker.io/falcosecurity/falco-driver-loader
+          subject-name: ghcr.io/grafana/falco-driver-loader
           subject-digest: ${{ steps.digests.outputs.falco-driver-loader }}
           push-to-registry: true

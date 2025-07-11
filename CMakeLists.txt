@@ -183,38 +183,34 @@ add_subdirectory(scripts)
 add_subdirectory(userspace/engine)
 add_subdirectory(userspace/falco)
 
-if(NOT MUSL_OPTIMIZED_BUILD)
-	include(falcoctl)
-	include(container_plugin)
+include(falcoctl)
+include(container_plugin)
+# Generate a binary_dir/falco.yaml that automatically enables the plugin to be used for local
+# testing.
+configure_file(${CMAKE_SOURCE_DIR}/falco.yaml ${CMAKE_BINARY_DIR} COPYONLY)
+# The custom target configures the plugin and set its path
+add_custom_target(
+	container
+	COMMAND sed -i 's,^load_plugins: .*,load_plugins: [container],g' ${CMAKE_BINARY_DIR}/falco.yaml
+	COMMAND sed -i 's,library_path: libcontainer.so,library_path: ${CONTAINER_LIBRARY},g'
+			${CMAKE_BINARY_DIR}/falco.yaml
+	DEPENDS container_plugin
+)
+# Let `make falco` also download container plugin
+add_dependencies(falco container)
 
-	# Generate a binary_dir/falco.yaml that automatically enables the plugin to be used for local
-	# testing.
-	configure_file(${CMAKE_SOURCE_DIR}/falco.yaml ${CMAKE_BINARY_DIR} COPYONLY)
-	# The custom target configures the plugin and set its path
-	add_custom_target(
-		container
-		COMMAND sed -i 's,^load_plugins: .*,load_plugins: [container],g'
-				${CMAKE_BINARY_DIR}/falco.yaml
-		COMMAND sed -i 's,library_path: libcontainer.so,library_path: ${CONTAINER_LIBRARY},g'
-				${CMAKE_BINARY_DIR}/falco.yaml
-		DEPENDS container_plugin
-	)
-	# Let `make falco` also download container plugin
-	add_dependencies(falco container)
-
-	# Install the plugin
-	install(
-		FILES "${CONTAINER_LIBRARY}"
-		DESTINATION "${FALCO_ABSOLUTE_SHARE_DIR}/plugins"
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-	# Install additional config override file to enable the container plugin
-	install(
-		FILES "${PROJECT_SOURCE_DIR}/config/falco.container_plugin.yaml"
-		DESTINATION "${FALCO_ETC_DIR}/config.d"
-		COMPONENT "${FALCO_COMPONENT_NAME}"
-	)
-endif()
+# Install the plugin
+install(
+	FILES "${CONTAINER_LIBRARY}"
+	DESTINATION "${FALCO_ABSOLUTE_SHARE_DIR}/plugins"
+	COMPONENT "${FALCO_COMPONENT_NAME}"
+)
+# Install additional config override file to enable the container plugin
+install(
+	FILES "${PROJECT_SOURCE_DIR}/config/falco.container_plugin.yaml"
+	DESTINATION "${FALCO_ETC_DIR}/config.d"
+	COMPONENT "${FALCO_COMPONENT_NAME}"
+)
 
 # Packages configuration
 include(CPackConfig)
