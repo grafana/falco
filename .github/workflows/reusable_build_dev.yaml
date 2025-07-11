@@ -48,6 +48,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.git_ref }}
+          persist-credentials: false
 
       - name: Update base image
         run: sudo apt update -y
@@ -60,10 +61,12 @@ jobs:
         run: sudo DEBIAN_FRONTEND=noninteractive apt install libssl-dev libc-ares-dev libprotobuf-dev protobuf-compiler libgrpc++-dev protobuf-compiler-grpc rpm libcurl4-openssl-dev linux-headers-$(uname -r) clang llvm -y
 
       - name: Prepare project
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
         run: |
           cmake -B build -S .\
             -DBUILD_FALCO_UNIT_TESTS=On \
-            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
             -DBUILD_FALCO_MODERN_BPF=Off \
             -DBUILD_BPF=${{ inputs.minimal == true && 'OFF' || 'ON' }} \
             -DBUILD_DRIVER=${{ inputs.minimal == true && 'OFF' || 'ON' }} \
@@ -88,6 +91,8 @@ jobs:
       - name: Run command
         id: run_cmd
         if: inputs.cmd != ''
+        env:
+          INPUT_CMD: ${{ inputs.cmd }}
         run: |
-          OUT=$(${{ inputs.cmd }})
+          OUT="$($INPUT_CMD)"
           echo "out=${OUT}" >> $GITHUB_OUTPUT

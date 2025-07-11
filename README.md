@@ -1,3 +1,12 @@
+# Fork
+
+This is a fork of [falcosecurity/falco](https://github.com/falcosecurity/falco).
+It is not an official Grafana Labs product, and only exists to contain patches we require in our deployments of Falco.
+If you have any problems with this product, please try the upstream Falco, and ONLY then should you open a support request in GitHub or Slack.
+
+There is NO SUPPORT on this tool.
+If you are a Grafana Labs employee, please come chat with us in `#proj-chromium-security`.
+
 # Falco
 
 [![Latest release](https://img.shields.io/github/v/release/falcosecurity/falco?style=for-the-badge)](https://github.com/falcosecurity/falco/releases/latest) [![Supported Architectures](https://img.shields.io/badge/ARCHS-x86__64%7Caarch64-blueviolet?style=for-the-badge)](https://github.com/falcosecurity/falco/releases/latest) [![License](https://img.shields.io/github/license/falcosecurity/falco?style=for-the-badge)](COPYING) [![Docs](https://img.shields.io/badge/docs-latest-green.svg?style=for-the-badge)](https://falco.org/docs)

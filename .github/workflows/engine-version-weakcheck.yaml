@@ -4,7 +4,7 @@
 
 name: Engine version checks (weak)
 on:
-  pull_request_target:
+  pull_request:
     paths:
       - 'userspace/engine/*.cpp'
       - 'userspace/engine/*.h'

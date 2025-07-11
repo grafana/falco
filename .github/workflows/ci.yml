@@ -103,6 +103,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: Check Engine checksum
         run: |
@@ -128,6 +129,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.base_ref }}
+          persist-credentials: false
 
       - name: Check Engine version
         run: |
