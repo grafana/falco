@@ -26,13 +26,15 @@ jobs:
       - name: Get settings for this release
         id: get_settings
         shell: python
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           import os
           import re
           import sys
 
           semver_no_meta = '''^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$'''
-          tag_name = '${{ github.event.release.tag_name }}'
+          tag_name = os.environ['TAG_NAME']
 
           is_valid_version = re.match(semver_no_meta, tag_name) is not None
           if not is_valid_version:
@@ -146,9 +148,12 @@ jobs:
           sed -i s/DRIVERVER/$DRIVER_VERS/g release-body.md
 
       - name: Append release matrixes
+        env:
+          BUCKET_SUFFIX: ${{ needs.release-settings.outputs.bucket_suffix }}
+          FALCO_VERSION: ${{ github.event.release.tag_name }}
         run: |
-          sed -i s/FALCOBUCKET/${{ needs.release-settings.outputs.bucket_suffix }}/g release-body.md
-          sed -i s/FALCOVER/${{ github.event.release.tag_name }}/g release-body.md
+          sed -i s/FALCOBUCKET/"${BUCKET_SUFFIX}"/g release-body.md
+          sed -i s/FALCOVER/"${FALCO_VERSION}"/g release-body.md
 
       - name: Generate release notes
         uses: leodido/rn2md@9c351d81278644c0e17b1ca68edbdba305276c73
@@ -160,9 +165,11 @@ jobs:
         run: cat notes.md >> release-body.md
 
       - name: Attach release creator to release body
+        env:
+          AUTHOR: ${{ github.event.release.author.login }}
         run: |
           echo "" >> release-body.md
-          echo "#### Release Manager @${{ github.event.release.author.login }}" >> release-body.md
+          echo "#### Release Manager @${AUTHOR}" >> release-body.md
 
       - name: Download debug symbols for Falco x86_64
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
