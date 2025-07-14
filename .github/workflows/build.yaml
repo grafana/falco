@@ -26,7 +26,6 @@ jobs:
     with:
       arch: x86_64
       version: ${{ needs.fetch-version.outputs.version }}
-      tag: master
     secrets: inherit
 
   build-docker-arm64:
@@ -37,12 +36,11 @@ jobs:
     with:
       arch: aarch64
       version: ${{ needs.fetch-version.outputs.version }}
-      tag: master
     secrets: inherit
 
   publish-docker:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
-    needs: [build-docker, build-docker-arm64]
+    needs: [fetch-version, build-docker, build-docker-arm64]
     uses: ./.github/workflows/reusable_publish_docker.yaml
     permissions:
       attestations: write # attestations are used to sign the images
@@ -51,5 +49,5 @@ jobs:
     with:
       # We don't do backports.
       is_latest: true
-      tag: ${{ github.event.ref }}
+      version: ${{ needs.fetch-version.outputs.version }}
     secrets: inherit

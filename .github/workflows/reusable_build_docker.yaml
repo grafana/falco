@@ -10,10 +10,6 @@ on:
         description: The Falco version to use when building images (must be of the format "1.2.3")
         required: true
         type: string
-      tag:
-        description: The Git ref to use
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -36,24 +32,23 @@ jobs:
       - name: Build Falco image
         env:
           ARCH: ${{ inputs.arch }}
-          TAG: ${{ inputs.tag }}
           FALCO_VERSION: ${{ inputs.version }}
         run: |
-          docker build -f docker/falco/Dockerfile -t ghcr.io/grafana/falco:"${ARCH}-${TAG}" \
+          docker build -f docker/falco/Dockerfile -t ghcr.io/grafana/falco:"${ARCH}-${FALCO_VERSION}" \
             --build-arg FALCO_VERSION="${FALCO_VERSION}" \
             .
-          docker save ghcr.io/grafana/falco:"${ARCH}-${TAG}" --output /tmp/falco-"${ARCH}".tar
+          docker save ghcr.io/grafana/falco:"${ARCH}-${FALCO_VERSION}" --output /tmp/falco-"${ARCH}".tar
 
       # falco-driver-loader builds on top of the Falco image.
       - name: Build falco-driver-loader image
         env:
           ARCH: ${{ inputs.arch }}
-          TAG: ${{ inputs.tag }}
+          FALCO_VERSION: ${{ inputs.version }}
         run: |
-          docker build -f docker/driver-loader/Dockerfile -t ghcr.io/grafana/falco-driver-loader:"${ARCH}-${TAG}" \
-            --build-arg FALCO_IMAGE_TAG="${ARCH}-${TAG}" \
+          docker build -f docker/driver-loader/Dockerfile -t ghcr.io/grafana/falco-driver-loader:"${ARCH}-${FALCO_VERSION}" \
+            --build-arg FALCO_IMAGE_TAG="${ARCH}-${FALCO_VERSION}" \
             .
-            docker save ghcr.io/grafana/falco-driver-loader:"${ARCH}-${TAG}" --output /tmp/falco-driver-loader-"${ARCH}".tar
+            docker save ghcr.io/grafana/falco-driver-loader:"${ARCH}-${FALCO_VERSION}" --output /tmp/falco-driver-loader-"${ARCH}".tar
 
       - name: Upload images tarballs
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0

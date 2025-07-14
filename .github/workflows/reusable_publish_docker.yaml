@@ -2,8 +2,8 @@
 on:
   workflow_call:
     inputs:
-      tag:
-        description: The tag to push
+      version:
+        description: The FALCO_VERSION constant
         required: true
         type: string
       is_latest:
@@ -51,43 +51,43 @@ jobs:
       # We're pushing the arch-specific manifests to GHCR so that we'll be able to easily create the index/multiarch later
       - name: Push arch-specific images to GHCR
         env:
-          TAG: ${{ inputs.tag }}
+          FALCO_VERSION: ${{ inputs.version }}
         run: |
-          docker push "ghcr.io/grafana/falco:aarch64-${TAG}"
-          docker push "ghcr.io/grafana/falco:x86_64-${TAG}"
-          docker push "ghcr.io/grafana/falco-driver-loader:aarch64-${TAG}"
-          docker push "ghcr.io/grafana/falco-driver-loader:x86_64-${TAG}"
+          docker push "ghcr.io/grafana/falco:aarch64-${FALCO_VERSION}"
+          docker push "ghcr.io/grafana/falco:x86_64-${FALCO_VERSION}"
+          docker push "ghcr.io/grafana/falco-driver-loader:aarch64-${FALCO_VERSION}"
+          docker push "ghcr.io/grafana/falco-driver-loader:x86_64-${FALCO_VERSION}"
 
       - name: Create Falco manifest on GHCR
         uses: Noelware/docker-manifest-action@8e337e3cb9656abfcf20146b99706fd88716e942 # v0.4.0
         with:
-          inputs: ghcr.io/grafana/falco:${{ inputs.tag }}
-          images: ghcr.io/grafana/falco:aarch64-${{ inputs.tag }},ghcr.io/grafana/falco:x86_64-${{ inputs.tag }}
+          inputs: ghcr.io/grafana/falco:${{ inputs.version }}
+          images: ghcr.io/grafana/falco:aarch64-${{ inputs.version }},ghcr.io/grafana/falco:x86_64-${{ inputs.version }}
           push: true
 
       - name: Create falco-driver-loader manifest on GHCR
         uses: Noelware/docker-manifest-action@8e337e3cb9656abfcf20146b99706fd88716e942 # v0.4.0
         with:
-          inputs: ghcr.io/grafana/falco-driver-loader:${{ inputs.tag }}
-          images: ghcr.io/grafana/falco-driver-loader:aarch64-${{ inputs.tag }},docker.io/grafana/falco-driver-loader:x86_64-${{ inputs.tag }}
+          inputs: ghcr.io/grafana/falco-driver-loader:${{ inputs.version }}
+          images: ghcr.io/grafana/falco-driver-loader:aarch64-${{ inputs.version }},docker.io/grafana/falco-driver-loader:x86_64-${{ inputs.version }}
           push: true
 
       - name: Get Digests for images
         id: digests
         env:
-          TAG: ${{ inputs.tag }}
+          FALCO_VERSION: ${{ inputs.version }}
         # We could probably use the docker-manifest-action output instead of recomputing those with crane
         run: |
-          echo "falco=$(crane digest ghcr.io/grafana/falco:${TAG})" >> $GITHUB_OUTPUT
-          echo "falco-driver-loader=$(crane digest ghcr.io/grafana/falco-driver-loader:${TAG})" >> $GITHUB_OUTPUT
+          echo "falco=$(crane digest ghcr.io/grafana/falco:${FALCO_VERSION})" >> $GITHUB_OUTPUT
+          echo "falco-driver-loader=$(crane digest ghcr.io/grafana/falco-driver-loader:${FALCO_VERSION})" >> $GITHUB_OUTPUT
 
       - name: Tag latest on GHCR
         if: inputs.is_latest
         env:
-          TAG: ${{ inputs.tag }}
+          FALCO_VERSION: ${{ inputs.version }}
         run: |
-          crane tag "ghcr.io/grafana/falco:${TAG}" latest
-          crane tag "ghcr.io/grafana/falco-driver-loader:${TAG}" latest
+          crane tag "ghcr.io/grafana/falco:${FALCO_VERSION}" latest
+          crane tag "ghcr.io/grafana/falco-driver-loader:${FALCO_VERSION}" latest
 
       - uses: actions/attest-build-provenance@173725a1209d09b31f9d30a3890cf2757ebbff0d # v1.1.2
         with:
