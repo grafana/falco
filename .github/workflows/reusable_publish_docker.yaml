@@ -69,7 +69,7 @@ jobs:
         uses: Noelware/docker-manifest-action@8e337e3cb9656abfcf20146b99706fd88716e942 # v0.4.0
         with:
           inputs: ghcr.io/grafana/falco-driver-loader:${{ inputs.version }}
-          images: ghcr.io/grafana/falco-driver-loader:aarch64-${{ inputs.version }},docker.io/grafana/falco-driver-loader:x86_64-${{ inputs.version }}
+          images: ghcr.io/grafana/falco-driver-loader:aarch64-${{ inputs.version }},ghcr.io/grafana/falco-driver-loader:x86_64-${{ inputs.version }}
           push: true
 
       - name: Get Digests for images
