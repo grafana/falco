@@ -190,7 +190,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "relwithdebinfo")
 			POST_BUILD
 			COMMAND ${OBJCOPY_EXECUTABLE} --only-keep-debug $<TARGET_FILE:falco>
 					$<TARGET_FILE:falco>.debug
-			COMMAND ${OBJCOPY_EXECUTABLE} --strip-debug --strip-unneeded $<TARGET_FILE:falco>
 			COMMAND ${OBJCOPY_EXECUTABLE} --add-gnu-debuglink=$<TARGET_FILE:falco>.debug
 					$<TARGET_FILE:falco>
 			COMMENT "Generating separate debug file for falco"
