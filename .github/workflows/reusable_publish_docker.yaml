@@ -22,6 +22,7 @@ jobs:
       attestations: write # attestations are used to sign the images
       contents: write # create release
       packages: write # push images to GHCR
+      id-token: write # required for attestations
 
     steps:
       - name: Set up Docker Buildx
