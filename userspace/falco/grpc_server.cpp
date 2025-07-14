@@ -293,7 +293,7 @@ void falco::grpc::server::version(const context& ctx,
 	build = FALCO_VERSION_BUILD;
 
 	auto& prerelease = *res.mutable_prerelease();
-	prerelease = FALCO_VERSION_PRERELEASE;
+	prerelease = "";  // Grafana: We don't set this
 
 	auto& version = *res.mutable_version();
 	version = FALCO_VERSION;
