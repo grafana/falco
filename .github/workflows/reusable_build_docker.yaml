@@ -22,6 +22,8 @@ jobs:
   build-docker:
     # See https://github.com/actions/runner/issues/409#issuecomment-1158849936
     runs-on: ${{ (inputs.arch == 'aarch64' && 'ubuntu-22.04-arm') || 'ubuntu-latest' }}
+    env:
+      BUILDKIT_STEP_LOG_MAX_SIZE: '-1'
     steps:
       - name: Checkout
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0

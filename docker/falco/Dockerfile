@@ -44,15 +44,23 @@ RUN cmake -B build -S . \
     -DMODERN_BPF_SKEL_DIR=./skeleton-build/skel_dir/ \
     -DBUILD_DRIVER=OFF \
     -DBUILD_BPF=OFF \
-    -DUSE_JEMALLOC=${USE_JEMALLOC} \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    -DCREATE_TEST_TARGETS=ON \
-    -DBUILD_FALCO_UNIT_TESTS=ON
+    -DUSE_JEMALLOC=${USE_JEMALLOC}
 
 RUN cmake --build build --target falco -j$(nproc)
 RUN cmake --build build --target package -j$(nproc)
-RUN cmake --build build --target falco_unit_tests -j$(nproc)
 RUN mv build/falco-${FALCO_VERSION}-$(uname -m).tar.gz falco.tar.gz
+
+RUN cmake -B build -S . \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DUSE_BUNDLED_DEPS=ON \
+    -DBUILD_LIBSCAP_GVISOR=ON \
+    -DBUILD_BPF=OFF \
+    -DBUILD_DRIVER=OFF \
+    -DUSE_JEMALLOC=${USE_JEMALLOC} \
+    -DBUILD_FALCO_MODERN_BPF=ON \
+    -DCREATE_TEST_TARGETS=ON \
+    -DBUILD_FALCO_UNIT_TESTS=ON
+RUN cmake --build build --target falco_unit_tests -j$(nproc)
 
 USER root
 RUN /src/build/unit_tests/falco_unit_tests
