@@ -34,63 +34,20 @@ else()
 	)
 endif()
 
-if(WIN32)
-	set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
-endif()
-
 # Built packages will include only the following components
 set(CPACK_INSTALL_CMAKE_PROJECTS
 	"${CMAKE_CURRENT_BINARY_DIR};${FALCO_COMPONENT_NAME};${FALCO_COMPONENT_NAME};/"
 )
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux") # only Linux has drivers
-	list(APPEND CPACK_INSTALL_CMAKE_PROJECTS
-		 "${CMAKE_CURRENT_BINARY_DIR};${DRIVER_COMPONENT_NAME};${DRIVER_COMPONENT_NAME};/"
-	)
-endif()
+list(APPEND CPACK_INSTALL_CMAKE_PROJECTS
+	 "${CMAKE_CURRENT_BINARY_DIR};${DRIVER_COMPONENT_NAME};${DRIVER_COMPONENT_NAME};/"
+)
 
 if(NOT CPACK_GENERATOR)
-	if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-		set(CPACK_GENERATOR DEB RPM TGZ)
-	else()
-		set(CPACK_GENERATOR TGZ)
-	endif()
+	set(CPACK_GENERATOR TGZ)
 endif()
 
 message(STATUS "Using package generators: ${CPACK_GENERATOR}")
 message(STATUS "Package architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
-
-if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-	set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-endif()
-if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-	set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
-endif()
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://www.falco.org")
-set(CPACK_DEBIAN_PACKAGE_SUGGESTS "dkms (>= 2.1.0.0)")
-set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-	"${CMAKE_BINARY_DIR}/scripts/debian/postinst;${CMAKE_BINARY_DIR}/scripts/debian/prerm;${CMAKE_BINARY_DIR}/scripts/debian/postrm;${PROJECT_SOURCE_DIR}/cmake/cpack/debian/conffiles"
-)
-
-set(CPACK_RPM_PACKAGE_LICENSE "Apache v2.0")
-set(CPACK_RPM_PACKAGE_ARCHITECTURE, "amd64")
-set(CPACK_RPM_PACKAGE_URL "https://www.falco.org")
-set(CPACK_RPM_PACKAGE_REQUIRES "systemd")
-set(CPACK_RPM_PACKAGE_SUGGESTS "dkms, kernel-devel")
-set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/scripts/rpm/postinstall")
-set(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/scripts/rpm/preuninstall")
-set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_BINARY_DIR}/scripts/rpm/postuninstall")
-set(CPACK_RPM_PACKAGE_VERSION "${FALCO_VERSION}")
-set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
-	/usr/src
-	/usr/share/man
-	/usr/share/man/man8
-	/etc
-	/usr
-	/usr/bin
-	/usr/share
-)
-set(CPACK_RPM_PACKAGE_RELOCATABLE "OFF")
 
 include(CPack)

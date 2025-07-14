@@ -1,4 +1,5 @@
-/build*
+/build/
+/skeleton-build/
 *~
 *.pyc
 
@@ -6,3 +7,4 @@
 
 *.idea*
 CMakeUserPresets.json
+*.tar.gz
