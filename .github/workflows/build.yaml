@@ -46,6 +46,7 @@ jobs:
       attestations: write # attestations are used to sign the images
       contents: write # create release
       packages: write # push images to GHCR
+      id-token: write # attestations
     with:
       # We don't do backports.
       is_latest: true
